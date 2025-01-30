@@ -183,7 +183,6 @@
         <script type="text/javascript">
             $(document).ready(function() {
                 const year = $('#year').val();
-                const month = $('#month').val();
                 let formatNumber = (number,min = 0,row = null) => {
                     // التحقق إذا كانت القيمة فارغة أو غير صالحة كرقم
                     if (number === null || number === undefined || isNaN(number)) {
@@ -192,7 +191,7 @@
                     return new Intl.NumberFormat('en-US', { minimumFractionDigits: min, maximumFractionDigits: 2 }).format(number);
                 };
                 let total = 0;
-                let currentMonth = "{{ $lastMonth }}";
+                var currentMonth = "{{ $lastMonth }}";
                 let table = $('#entries-table').DataTable({
                     processing: true,
                     serverSide: true,
@@ -208,7 +207,7 @@
                         url: '{{ route("dashboard.fixed_entries.index") }}',
                         data: function (d) {
                             d.year = year;
-                            d.month = month;
+                            d.month = $('#month').val();
                         },
                         error: function(xhr, status, error) {
                             console.error('AJAX error:', status, error);
@@ -222,7 +221,8 @@
                             @else
                             return '';
                             @endcan
-                        }},
+                        }
+                        },
                         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false}, // عمود الترقيم التلقائي
                         { data: 'name', name: 'name'  , orderable: false, class: 'sticky'},
                         { data: 'association', name: 'association', orderable: false},
@@ -419,6 +419,7 @@
                         // تطبيق الفلترة على العمود باستخدام القيم المحددة
                         table.column(target).search(searchExpression, true, false).draw(); // Use regex search
                         // استخدام البحث النصي العادي (regex: false)
+
                     } else {
                         // إذا لم تكن هناك قيم محددة، نعرض جميع البيانات
                         table.column(target).search('').draw();
