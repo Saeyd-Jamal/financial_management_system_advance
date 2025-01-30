@@ -12,6 +12,7 @@ use App\Http\Controllers\Dashboard\CurrencyController;
 use App\Http\Controllers\Dashboard\EmployeeController;
 use App\Http\Controllers\Dashboard\ExchangeController;
 use App\Http\Controllers\Dashboard\FixedEntriesController;
+use App\Http\Controllers\Dashboard\HomeController;
 use App\Http\Controllers\Dashboard\LoanController;
 use App\Http\Controllers\Dashboard\ReceivableController;
 use App\Http\Controllers\Dashboard\ReportController;
@@ -32,7 +33,7 @@ Route::group([
     /* ********************************************************** */ 
 
     // Dashboard ************************
-    Route::get('/', function () {return view('dashboard.index');})->name('home');
+    Route::get('/', [HomeController::class,'index'])->name('home');
 
     // Logs ************************
     Route::get('logs',[ActivityLogController::class,'index'])->name('logs.index');

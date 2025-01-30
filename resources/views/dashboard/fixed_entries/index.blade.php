@@ -192,7 +192,7 @@
                     return new Intl.NumberFormat('en-US', { minimumFractionDigits: min, maximumFractionDigits: 2 }).format(number);
                 };
                 let total = 0;
-                var currentMonth = "{{ $lastMonth }}";
+                let currentMonth = "{{ $lastMonth }}";
                 let table = $('#entries-table').DataTable({
                     processing: true,
                     serverSide: true,
@@ -222,8 +222,7 @@
                             @else
                             return '';
                             @endcan
-                        }
-                        },
+                        }},
                         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false}, // عمود الترقيم التلقائي
                         { data: 'name', name: 'name'  , orderable: false, class: 'sticky'},
                         { data: 'association', name: 'association', orderable: false},
@@ -420,7 +419,6 @@
                         // تطبيق الفلترة على العمود باستخدام القيم المحددة
                         table.column(target).search(searchExpression, true, false).draw(); // Use regex search
                         // استخدام البحث النصي العادي (regex: false)
-
                     } else {
                         // إذا لم تكن هناك قيم محددة، نعرض جميع البيانات
                         table.column(target).search('').draw();

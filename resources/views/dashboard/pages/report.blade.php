@@ -1,6 +1,13 @@
 <x-front-layout>
     @push('styles')
         <link rel="stylesheet" href="{{ asset('css/select2.css') }}">
+        <style>
+            label {
+                font-size: 16px !important;
+                color: #000 !important;
+                font-weight: bold;
+            }
+        </style>
     @endpush
     <div class="row align-items-center mb-2">
         <div class="col">
@@ -11,24 +18,24 @@
         <form action="{{route('dashboard.report.export')}}" method="post" class="col-12" target="_blank">
             @csrf
             <div class="row">
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <x-form.input type="month" :value="$month" name="month" label="الشهر المطلوب (الشهر الاول)" />
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <x-form.input type="month"  name="to_month" label="الى شهر" />
                 </div>
             </div>
             <h3 class="h5">التخصيصات</h3>
             <div class="row">
-                <div class="form-group col-md-3">
-                    <label for="area" class="form-label">المنظقة</label>
+                <div class="form-group col-md-3 my-2">
+                    <label for="area">المنظقة</label>
                     <select name="area[]" id="area" class="form-select select2-multi" multiple>
                         @foreach ($areas as $area)
                             <option value="{{ $area }}"> {{ $area }} </option>
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="matrimonial_status">الحالة الزوجية</label>
                     <select name="matrimonial_status[]" id="matrimonial_status" class="form-select select2-multi" multiple >
                         @foreach ($matrimonial_status as $matrimonial_status)
@@ -36,7 +43,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="scientific_qualification">المؤهل العلمي</label>
                     <select name="scientific_qualification[]" id="scientific_qualification" class="form-select select2-multi" multiple >
                         @foreach ($scientific_qualification as $scientific_qualification)
@@ -44,7 +51,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="gender">الجنس</label>
                     <select name="gender[]" id="gender" class="form-select select2-multi" multiple >
                         <option value="ذكر">ذكور</option>
@@ -52,7 +59,7 @@
                     </select>
                 </div>
                 {{-- بيانات العمل --}}
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="working_status">حالة الدوام</label>
                     <select name="working_status[]" id="working_status" class="form-select select2-multi" multiple >
                         @foreach ($working_status as $working_status)
@@ -60,7 +67,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="field_action">مجال العمل</label>
                     <select name="field_action[]" id="field_action" class="form-select select2-multi" multiple >
                         @foreach ($field_action as $field_action)
@@ -68,14 +75,14 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="dual_function">مزدوج الوظيفة</label>
                     <select name="dual_function[]" id="dual_function"   class="form-select select2-multi" multiple >
                         <option value="غير موظف"> غير موظف</option>
                         <option value="موظف"> موظف</option>
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="state_effectiveness">حالة الفعالية</label>
                     <select name="state_effectiveness[]" id="state_effectiveness" class="form-select select2-multi" multiple >
                         @foreach ($state_effectiveness as $state_effectiveness)
@@ -83,7 +90,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="nature_work">طبيعة العمل</label>
                     <select name="nature_work[]" id="nature_work"   class="form-select select2-multi" multiple >
                         @foreach ($nature_work as $nature_work)
@@ -91,7 +98,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="workplace">مكان العمل</label>
                     <select name="workplace[]" id="workplace"   class="form-select select2-multi" multiple >
                         @foreach ($workplace as $workplace)
@@ -99,7 +106,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="section">القسم</label>
                     <select name="section[]" id="section"   class="form-select select2-multi" multiple >
                         @foreach ($section as $section)
@@ -107,7 +114,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="type_appointment">نوع التعين</label>
                     <select name="type_appointment[]" id="type_appointment"   class="form-select select2-multi" multiple >
                         @foreach ($type_appointment as $type_appointment)
@@ -115,7 +122,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="dependence">التبعية</label>
                     <select name="dependence[]" id="dependence"   class="form-select select2-multi" multiple >
                         @foreach ($dependence as $dependence)
@@ -123,7 +130,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="establishment">المنشأة</label>
                     <select name="establishment[]" id="establishment"   class="form-select select2-multi" multiple >
                         @foreach ($establishment as $establishment)
@@ -131,7 +138,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="payroll_statement">بيان الراتب</label>
                     <select name="payroll_statement[]" id="payroll_statement"   class="form-select select2-multi" multiple >
                         @foreach ($payroll_statement as $payroll_statement)
@@ -139,7 +146,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="association">الجمعية</label>
                     <select name="association[]" id="association" class="form-select select2-multi" multiple >
                         @foreach ($association as $association)
@@ -150,7 +157,7 @@
             </div>
             <h3 class="h5">أومر التصدير</h3>
             <div class="row align-items-center mb-2">
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="report_type">نوع الكشف</label>
                     <select class="form-select" name="report_type" id="report_type" required>
                         <option  value="" disabled selected>حدد نوع الكشف</option>
@@ -173,7 +180,7 @@
                     </select>
                     <span id="report_warning"></span>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="export_type">طريقة التصدير</label>
                     <select class="form-select" name="export_type" id="export_type">
                         <option selected="" value="view">معاينة</option>
@@ -181,7 +188,7 @@
                         <option value="export_excel">Excel</option>
                     </select>
                 </div>
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="type_print">نوع الورق</label>
                     <select class="form-select" name="type_print" id="type_print">
                         <option selected="" value="a4">A4</option>
@@ -196,14 +203,14 @@
                 </button>
             </div>
             <div class="row" id="bankDiv" style="display: none;">
-                <div class="form-group col-md-3">
+                <div class="form-group col-md-3 my-2">
                     <label for="exchange_type">نوع الصرف</label>
                     <select name="exchange_type" id="exchange_type" class="form-select" >
                         <option value="cash" selected>نقدي</option>
                         <option value="bank">بنك</option>
                     </select>
                 </div>
-                <div class="form-group col-md-3" id="bank_select" style="display: none;">
+                <div class="form-group col-md-3 my-2" id="bank_select" style="display: none;">
                     <label for="bank">البنك</label>
                     <select name="bank" id="bank" class="form-select" >
                         <option value="" selected>حدد البنك المراد</option>
