@@ -215,34 +215,4 @@ class LoanController extends Controller
         $time = Carbon::now();
         return $pdf->stream('تقرير صرف ' . $name_loan .'  للموظف : ' . $employee->name .'  _ '.$time.'.pdf');
     }
-
-    public function resetLoans(Request $request){
-        DB::beginTransaction();
-        try{
-            $months = ['02','03','04','05','06','07','08','09','10','11','12'];
-            $employees = Employee::all();
-            foreach($months as $month){
-                foreach($employees as $employee){
-                    $savings_loan = Loan::where('employee_id', $employee->id)->where('month','2025-' . $month)->first() ? Loan::where('employee_id', $employee->id)->where('month','2025-' . $month)->first()->savings_loan : 0;
-                    $association_loan = Loan::where('employee_id', $employee->id)->where('month','2025-' . $month)->first() ? Loan::where('employee_id', $employee->id)->where('month','2025-' . $month)->first()->association_loan : 0;
-                    $shekel_loan = Loan::where('employee_id', $employee->id)->where('month','2025-' . $month)->first() ? Loan::where('employee_id', $employee->id)->where('month','2025-' . $month)->first()->shekel_loan : 0;
-
-                    $total = ReceivablesLoans::where('employee_id', $employee->id)->first();
-                    if($total){
-                        $total->update([
-                            'total_association_loan' =>  DB::raw('total_association_loan + ' . $association_loan),
-                            'total_savings_loan' =>  DB::raw('total_savings_loan + ' . $savings_loan),
-                            'total_shekel_loan' =>  DB::raw('total_shekel_loan + ' . $shekel_loan),
-                        ]);
-                    }
-                }
-                
-            }
-            DB::commit();
-        }catch(\Exception $e){
-            DB::rollBack();
-            throw $e;
-        }
-        return response()->json(['success' => 'تم حذف القرضات بنجاح']);
-    }
 }

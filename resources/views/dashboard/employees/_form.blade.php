@@ -48,40 +48,41 @@
     </style>
 @endpush
 @push('styles')
-<link rel="stylesheet" href="{{asset('css/datatable/jquery.dataTables.min.css')}}">
-<link rel="stylesheet" href="{{asset('css/datatable/dataTables.bootstrap4.css')}}">
-<link rel="stylesheet" href="{{asset('css/datatable/dataTables.dataTables.css')}}">
-<link rel="stylesheet" href="{{asset('css/datatable/buttons.dataTables.css')}}">
+    <link rel="stylesheet" href="{{asset('css/datatable/jquery.dataTables.min.css')}}">
+    <link rel="stylesheet" href="{{asset('css/datatable/dataTables.bootstrap4.css')}}">
+    <link rel="stylesheet" href="{{asset('css/datatable/dataTables.dataTables.css')}}">
+    <link rel="stylesheet" href="{{asset('css/datatable/buttons.dataTables.css')}}">
 
-{{-- sticky table --}}
-<link id="stickyTableLight" rel="stylesheet" href="{{ asset('css/custom/stickyTable.css') }}">
-<link id="stickyTableDark" rel="stylesheet" href="{{ asset('css/custom/stickyTableDark.css') }}" disabled>
+    {{-- sticky table --}}
+    <link id="stickyTableLight" rel="stylesheet" href="{{ asset('css/custom/stickyTable.css') }}">
+    <link id="stickyTableDark" rel="stylesheet" href="{{ asset('css/custom/stickyTableDark.css') }}" disabled>
 
-{{-- custom css --}}
-<link rel="stylesheet" href="{{ asset('css/custom/style.css') }}">
-<link rel="stylesheet" href="{{ asset('css/custom/datatableIndex.css') }}">
-<style>
-    thead{
-        background-color: #a9d08e !important;
-    }
-    tfoot{
-        background-color: #a9d08e !important;
-    }
-    th.sticky{
-        background-color: #a9d08e !important;
-    }
-    table.sticky thead th{
-        color: #000 !important;
-    }
-    table.sticky tfoot td{
-        color: #000 !important;
-    }
-    td.dt-type-numeric{
-        text-align: center !important;
-    }
+    {{-- custom css --}}
+    <link rel="stylesheet" href="{{ asset('css/custom/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/custom/datatableIndex.css') }}">
+    <style>
+        thead{
+            background-color: #a9d08e !important;
+        }
+        tfoot{
+            background-color: #a9d08e !important;
+        }
+        th.sticky{
+            background-color: #a9d08e !important;
+        }
+        table.sticky thead th{
+            color: #000 !important;
+        }
+        table.sticky tfoot td{
+            color: #000 !important;
+        }
+        td.dt-type-numeric{
+            text-align: center !important;
+        }
 
-</style>
+    </style>
 @endpush
+
 <div class="col-xl-12">
     @if (isset($btn_label))
         <h3 class="text-primary">الموظف : {{ $employee->name }}</h3>
@@ -153,7 +154,7 @@
                     
                 </ul>
                 <div class="tab-content">
-                    <div  class="tab-pane fade" role="tabpanel" id="menu1">
+                    <div  class="tab-pane fade show active" role="tabpanel" id="menu1">
                         <div class="row">
                             <div class="col-md-3 my-2">
                                 <x-form.input label="إسم الموظف" :value="$employee->name" name="name" placeholder="أحمد محمد ...."
@@ -571,7 +572,7 @@
                             </button> --}}
                         </div>
                     </div>
-                    <div  class="tab-pane fade  show active" role="tabpanel" id="menu4">
+                    <div  class="tab-pane fade" role="tabpanel" id="menu4">
                         <div class="row">
                             <div class="col-md-4 my-2">
                                 <x-form.input type="number" step="0.01" label="إجمالي المستحقات"
@@ -604,68 +605,6 @@
                             <button type="submit" class="btn btn-primary mx-2 col-2">
                                 {{ $btn_label ?? 'أضف' }}
                             </button>
-                        </div>
-                        <div class="row mt-4">
-                            <div class="table-responsive text-nowrap">
-                                <table class="table table-bordered table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th class="text-white text-center">#</th>
-                                            <th>السنة</th>
-                                            <th>الرصيد</th>
-                                            <th>يناير</th>
-                                            <th>فبراير</th>
-                                            <th>مارس</th>
-                                            <th>أبريل</th>
-                                            <th>مايو</th>
-                                            <th>يونيو</th>
-                                            <th>يوليه</th>
-                                            <th>أغسطس</th>
-                                            <th>سبتمبر</th>
-                                            <th>أكتوبر</th>
-                                            <th>نوفمبر</th>
-                                            <th>ديسمبر</th>
-                                            <th>الإجمالي</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @php
-                                            $years = range(2024,Carbon\Carbon::now()->year);
-                                            $months = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
-                                            $field = 'savings_loan';
-                                            $total = $employee->totals->total_savings_loan ?? 0;
-                                            
-                                        @endphp
-                                        <tr>
-                                            <td colspan="15">قرض الإدخار</td>
-                                        </tr>
-                                        @foreach ($years as $year)
-                                        <tr>
-                                            @php
-                                                $loans = $employee->loans->whereBetween('month', [$year . '-01', $year . '-12']);
-                                                $val = $loans->sum('savings_loan');
-                                                $val = $total + $val;
-                                            @endphp
-                                            <td class="text-center">
-                                                {{ $employee->id }}
-                                            </td>
-                                            <td class="text-center">
-                                                {{ $year }}
-                                            </td>
-                                            <td>
-                                                {{ $val ?? 0 }}
-                                            </td>
-                                            @foreach ($months as $month)
-                                                    <td>{{$employee->loans->where('month',$year . '-' . $month)->first() ? $employee->loans->where('month',$year . '-' . $month)->first()[$field] : 0}}</td>
-                                            @endforeach
-                                            <td>
-                                                {{ $employee->totals->total_savings_loan ?? 0 }}
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
                         </div>
                     </div>
                     @if (isset($btn_label))
