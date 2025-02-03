@@ -10,6 +10,7 @@ use App\Models\Exchange;
 use App\Models\Loan;
 use App\Models\Salary;
 use App\Models\ReceivablesLoans;
+use App\Services\LoanService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -21,10 +22,25 @@ class LoanController extends Controller
 {
     public $monthNow;
     public function __construct(){
-        $this->monthNow = Carbon::now()->format('Y-m');
+        $monthLast = Accreditation::orderBy('id', 'desc')->first() ? Accreditation::orderBy('id', 'desc')->first()->month : Carbon::now()->subMonth()->format('Y-m');
+        $this->monthNow = Carbon::parse($monthLast)->addMonth()->format('Y-m');
     }
     public function getField($employee,$year,$month,$field){
         $val = $employee->loans->where('month',$year . '-' . $month)->first() ? $employee->loans->where('month',$year . '-' . $month)->first()[$field] : 0;
+        return $val;
+    }
+    public function getTotalYear($employee,$year,$total_field,$field){
+        $total = $employee->totals[$total_field] ?? 0;
+        $loans = Loan::where('employee_id', $employee->id)->whereBetween('month', [$year . '-01', $year . '-12'])->get();
+        $val = $loans->sum($field);
+        for($i=1; $i <= 12; $i++) {
+            $i = $i < 10 ? '0'.$i : $i;
+            $salary = Salary::where('employee_id', $employee->id)->where('month', $year . '-' . $i)->first();
+            if($salary != null){
+                $total = $total + (Loan::where('employee_id', $employee->id)->where('month', $year . '-' . $i)->first()[$field] ?? 0);
+            }
+        }
+        $val = $total - $val;
         return $val;
     }
     public function getPreviousBalance($employee,$year,$field,$total_field){
@@ -62,6 +78,7 @@ class LoanController extends Controller
                 $employee->month10 = $this->getField($employee,$year,'10',$field);
                 $employee->month11 = $this->getField($employee,$year,'11',$field);
                 $employee->month12 = $this->getField($employee,$year,'12',$field);
+                $employee->total_year = $this->getTotalYear($employee,$year,$total_field,$field);
                 $employee->total = $employee->totals[$total_field] ?? 0;
                 return $employee;
             });
@@ -133,60 +150,7 @@ class LoanController extends Controller
         $this->authorize('update', Loan::class);
         DB::beginTransaction();
         try{
-            $year = $request->header('year');
-            $month_last = Accreditation::orderBy('id', 'desc')->first() ? Accreditation::orderBy('id', 'desc')->first()->month : Carbon::now()->format('Y-m');
-            $total = ReceivablesLoans::where('employee_id', $id)->first();
-            if($total){
-                $total->update([
-                    'total_association_loan' =>  $request['association_loan_total'] ?? 0,
-                    'total_savings_loan' => $request['savings_loan_total'] ?? 0,
-                    'total_shekel_loan' => $request['shekel_loan_total'] ?? 0,
-                ]);
-            }else{
-                ReceivablesLoans::create([
-                    'employee_id' => $id,
-                    'total_association_loan' =>  $request['association_loan_total'] ?? 0,
-                    'total_savings_loan' => $request['savings_loan_total'] ?? 0,
-                    'total_shekel_loan' => $request['shekel_loan_total'] ?? 0,
-                ]);
-            }
-            for ($i=1; $i <= 12; $i++) {
-                $monthlast = Carbon::parse($month_last)->format('m');
-                $i = $i < 10 ? '0'.$i : $i;
-                if($monthlast != 12){
-                    if($i <= $monthlast){
-                        continue;
-                    }
-                }
-                $month = $year.'-'.$i;
-                $loansOld = Loan::where('employee_id', $id)->where('month', $month)->first();
-                $loans = Loan::updateOrCreate([
-                    'employee_id' => $id,
-                    'month' => $month
-                ],[
-                    'savings_loan' =>  $request['savings_loan-'.$i] ?? 0,
-                    'association_loan' => $request['association_loan-'.$i] ?? 0,
-                    'shekel_loan' => $request['shekel_loan-'.$i] ?? 0,
-                ]);
-                // $total = $loans->employee->totals;
-                // $association_loan = $request['association_loan-'.$i] ?? 0;
-                // $savings_loan = $request['savings_loan-'.$i] ?? 0;
-                // $shekel_loan = $request['shekel_loan-'.$i] ?? 0;
-            }
-            Loan::updateOrCreate([
-                'employee_id' => $id,
-                'month' => '0000-00'
-            ],[
-                'savings_loan' =>  $request['savings_loan-0000'] ?? -01,
-                'association_loan' =>  $request['association_loan-0000'] ?? -01,
-                'shekel_loan' =>  $request['shekel_loan-0000'] ?? -01,
-            ]);
-
-            $employee = Employee::findOrFail($id);
-            $salary = Salary::where('employee_id',$id)->where('month',Carbon::now()->format('Y-m'))->first();
-            if($salary != null){
-                AddSalaryEmployee::addSalary($employee,$this->monthNow);
-            }
+            LoanService::store($request,$id,$this->monthNow);
             DB::commit();
         }catch(\Exception $e){
             DB::rollBack();
@@ -250,5 +214,35 @@ class LoanController extends Controller
         ]);
         $time = Carbon::now();
         return $pdf->stream('تقرير صرف ' . $name_loan .'  للموظف : ' . $employee->name .'  _ '.$time.'.pdf');
+    }
+
+    public function resetLoans(Request $request){
+        DB::beginTransaction();
+        try{
+            $months = ['02','03','04','05','06','07','08','09','10','11','12'];
+            $employees = Employee::all();
+            foreach($months as $month){
+                foreach($employees as $employee){
+                    $savings_loan = Loan::where('employee_id', $employee->id)->where('month','2025-' . $month)->first() ? Loan::where('employee_id', $employee->id)->where('month','2025-' . $month)->first()->savings_loan : 0;
+                    $association_loan = Loan::where('employee_id', $employee->id)->where('month','2025-' . $month)->first() ? Loan::where('employee_id', $employee->id)->where('month','2025-' . $month)->first()->association_loan : 0;
+                    $shekel_loan = Loan::where('employee_id', $employee->id)->where('month','2025-' . $month)->first() ? Loan::where('employee_id', $employee->id)->where('month','2025-' . $month)->first()->shekel_loan : 0;
+
+                    $total = ReceivablesLoans::where('employee_id', $employee->id)->first();
+                    if($total){
+                        $total->update([
+                            'total_association_loan' =>  DB::raw('total_association_loan + ' . $association_loan),
+                            'total_savings_loan' =>  DB::raw('total_savings_loan + ' . $savings_loan),
+                            'total_shekel_loan' =>  DB::raw('total_shekel_loan + ' . $shekel_loan),
+                        ]);
+                    }
+                }
+                
+            }
+            DB::commit();
+        }catch(\Exception $e){
+            DB::rollBack();
+            throw $e;
+        }
+        return response()->json(['success' => 'تم حذف القرضات بنجاح']);
     }
 }

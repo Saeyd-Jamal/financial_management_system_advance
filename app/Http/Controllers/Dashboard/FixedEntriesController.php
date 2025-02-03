@@ -23,7 +23,8 @@ class FixedEntriesController extends Controller
 
     public $monthNow;
     public function __construct(){
-        $this->monthNow = Carbon::now()->format('Y-m');
+        $monthLast = Accreditation::orderBy('id', 'desc')->first() ? Accreditation::orderBy('id', 'desc')->first()->month : Carbon::now()->subMonth()->format('Y-m');
+        $this->monthNow = Carbon::parse($monthLast)->addMonth()->format('Y-m');
     }
 
     /**

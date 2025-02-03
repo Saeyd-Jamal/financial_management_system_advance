@@ -33,17 +33,26 @@
     </div>
     <div class="row">
         <div class="col-12 d-flex justify-content-between">
-            <div class="d-flex align-items-center">
-                <span class="h5">إجمالي قرض الإدخار : </span>
-                <x-form.input name="savings_loan_total" style="width: 121px;" type="number" step="0.01" min="0" />
+            <div>
+                <div class="d-flex align-items-center">
+                    <span class="h5">إجمالي قرض الإدخار : </span>
+                    <x-form.input name="savings_loan_total" style="width: 121px;" type="number" step="0.01" min="0" />
+                </div>
+                <span>المتبقي بعد الخصم : <span class="text-danger" id="savings_loan_total_span"></span></span>
             </div>
-            <div class="d-flex align-items-center">
-                <span class="h5">إجمالي قرض الجمعية : </span>
-                <x-form.input name="association_loan_total" style="width: 121px;" type="number" step="0.01" min="0" />
+            <div>
+                <div class="d-flex align-items-center">
+                    <span class="h5">إجمالي قرض الجمعية : </span>
+                    <x-form.input name="association_loan_total" style="width: 121px;" type="number" step="0.01" min="0" />
+                </div>
+                <span>المتبقي بعد الخصم : <span class="text-danger" id="association_loan_total_span"></span></span>
             </div>
-            <div class="d-flex align-items-center">
-                <span class="h5">إجمالي قرض اللجنة (الشيكل) : </span>
-                <x-form.input name="shekel_loan_total" style="width: 121px;" type="number" step="0.01" min="0" />
+            <div>
+                <div class="d-flex align-items-center">
+                    <span class="h5">إجمالي قرض اللجنة (الشيكل) : </span>
+                    <x-form.input name="shekel_loan_total" style="width: 121px;" type="number" step="0.01" min="0" />
+                </div>
+                <span>المتبقي بعد الخصم : <span class="text-danger" id="shekel_loan_total_span"></span></span>
             </div>
         </div>
     </div>

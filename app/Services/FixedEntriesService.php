@@ -74,7 +74,7 @@ class FixedEntriesService
 
         // Download Salary
         $employee = Employee::findOrFail($id);
-        $salary = Salary::where('employee_id',$id)->where('month',Carbon::now()->format('Y-m'))->first();
+        $salary = Salary::where('employee_id',$id)->where('month',$monthNow)->first();
         if($salary != null){
             AddSalaryEmployee::addSalary($employee,$monthNow);
         }

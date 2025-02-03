@@ -40,6 +40,14 @@ class SalaryController extends Controller
             '12' => 'ديسمبر'
         ];
     }
+    /**
+     * get value from fixed entries table if value = 0 in month get value from static table
+     *
+     * @param  \App\Models\FixedEntries  $fixedEntries
+     * @param  \App\Models\FixedEntries  $fixedEntriesStatic
+     * @param  string  $filed
+     * @return int
+     */
     public function fixedEntriesVal($fixedEntries,$fixedEntriesStatic,$filed){
         $val = 0;
         // $employee->health_insurance = $fixedEntriesStatic->health_insurance != '-01' ? $fixedEntriesStatic->health_insurance : $fixedEntries->health_insurance;
@@ -194,7 +202,7 @@ class SalaryController extends Controller
         try {
 
             // التجربة لموظف
-            // $employee = Employee::findOrFail(17);
+            // $employee = Employee::findOrFail(3);
             // $month = $request->month ?? Carbon::now()->format('Y-m');
             // AddSalaryEmployee::addSalary($employee,$month);
 

@@ -20,57 +20,92 @@ class AddSalaryEmployee{
     {
         //
     }
+
+    // جلب القيم من جدول التعديلات
     public static function fixedEntriesVal($fixedEntries,$fixedEntriesStatic,$filed){
         $USD = Currency::where('code','USD')->first('value')->value ?? 3.5;
         $val = 0;
-        if($fixedEntries[$filed] == 0){
-            $val = $fixedEntriesStatic[$filed];
-        }else{
-            $val = $fixedEntries[$filed];
-        }
-        // if($fixedEntriesStatic != null && $fixedEntriesStatic[$filed] != -1 ){
-        //     $val = $fixedEntriesStatic[$filed];
-        // }else{
-        //     if($fixedEntries != null){
-        //         $val = $fixedEntries[$filed];
-        //     }else{
-        //         $val = 0;
-        //     }
-        // }
-        return $val;
-    }
-    public static function loanVal($loans,$loansStatic,$filed){
-        $USD = Currency::where('code','USD')->first('value')->value ?? 3.5;
-        $val = 0;
-
-        if($loansStatic != null && $loansStatic[$filed] != -1 ){
-            $val = $loansStatic[$filed] ?? 0;
-        }else{
-            if($loans != null){
-                $val = $loans[$filed] ?? 0;
+        if($fixedEntries != null){
+            if($fixedEntries[$filed] == 0){
+                $val = $fixedEntriesStatic != null ? $fixedEntriesStatic[$filed] : 0;
             }else{
-                $val = 0;
+                $val = $fixedEntries[$filed];
             }
         }
+        return $val;
+    }
+
+    // جلب القيم من جدول القرض
+    public static function loanVal($loans,$loansStatic,$filed,$month){
+        $USD = Currency::where('code','USD')->first('value')->value ?? 3.5;
+        $val = 0;
+        if($loans != null){
+            $val = $loans[$filed] ?? 0;
+        }else{
+            $val = 0;
+        }
         if($filed == 'savings_loan'){
-            return ($val * $USD) ?? 0;
+            $val = $val * $USD;
         }
         return $val;
     }
 
+    // عمل تخزين لخصومات الراتب
+    public static function setloanTotal($savings_loan,$association_loan,$shekel_loan,$employee_id,$month){
+        $salary = Salary::where('employee_id',$employee_id)->where('month',$month)->first();
+        $total = ReceivablesLoans::where('employee_id',$employee_id)->first();
+
+        // filed == 'savings_loan'
+        if($salary != null){
+            if($salary->savings_loan != $savings_loan){
+                $total_savings_loan = ($total->total_savings_loan + $salary->savings_loan) - $savings_loan;
+                $total->update([
+                    'total_savings_loan' => $total_savings_loan,
+                ]);
+            }
+        }else{
+            $total->update([
+                'total_savings_loan' =>  DB::raw('total_savings_loan - ' . $savings_loan),
+            ]);
+        }
+
+        // filed == 'association_loan'
+        if($salary != null){
+            if($salary->association_loan != $association_loan){
+                $total_association_loan = ($total->total_association_loan + $salary->association_loan) - $association_loan;
+                $total->update([
+                    'total_association_loan' => $total_association_loan,
+                ]);
+            }
+        }else{
+            $total->update([
+                'total_savings_loan' =>  DB::raw('total_savings_loan - ' . $association_loan),
+            ]);
+        }
+
+        // filed == 'shekel_loan'
+        if($salary != null){
+            if($salary->shekel_loan != $shekel_loan){
+                $total_shekel_loan = ($total->total_shekel_loan + $salary->shekel_loan) - $shekel_loan;
+                $total->update([
+                    'total_shekel_loan' => $total_shekel_loan,
+                ]);
+            }
+        }else{
+            $total->update([
+                'total_savings_loan' =>  DB::raw('total_savings_loan - ' . $shekel_loan),
+            ]);
+        }
+    }
+
+    // الدالة الأساسية
     public static function addSalary($employee,$month = null)
     {
-        // قيم ثابتة تجلب من الخارج
-        if($month == null){
-            $month = Carbon::now()->format('Y-m');
-        }
+        // التحقق من حالة الفعالية ***********************************************
         $state_effectiveness = [
             'فعال',
             'شهيد'
         ];
-        $USD = Currency::where('code','USD')->first('value')->value ?? 3.5;
-
-        // موظف غير فعال ام لا
         if(!in_array($employee->workData->state_effectiveness,$state_effectiveness)){
             $salary = Salary::where('employee_id',$employee->id)->where('month',$month)->first();
             if($salary != null){
@@ -78,12 +113,25 @@ class AddSalaryEmployee{
             }
             return;
         }
-        // مزدوج الوظيفة
+        // ***************************************************************
+
+
+        // قيم ثابتة تجلب من الخارج
+        $USD = Currency::where('code','USD')->first('value')->value ?? 3.5;
+        if($month == null){
+            $month = Carbon::now()->format('Y-m');
+        }
+        // ***************************************************************
+
+
+        // الفحص من حالة الإزدواجية ***********************************************
         $dual_function = $employee->workData->dual_function;
         if($dual_function == "غير موظف"){
             $dual_function = null;
         }
-        // مبلغ السلفة من حالة الدوام
+        // ***************************************************************
+
+        // جلب مبلغ السلفة ***********************************************
         $working_status = $employee->workData->working_status;
         if($working_status == "مداوم" || $working_status == "نعم"){
             $advance_payment = Constant::where('key','advance_payment_permanent')->first('value')->value;
@@ -103,30 +151,12 @@ class AddSalaryEmployee{
             $advance_payment = 0;
         }
         $advance_payment = intval($advance_payment);
+        // ************************************************************
 
-
-        //  البنك المتعامل معه
-        if($employee->accounts->first() != null){
-            foreach ($employee->accounts as $bank) {
-                $account_default = $bank->pivot->where('employee_id',$employee->id)->where('default',1)->first();
-                if($account_default == null){
-                    $account_default = $bank->pivot->where('employee_id',$employee->id)->first();
-                }
-            }
-            $bank = Bank::find($account_default->bank_id)->first()->name;
-            $branch_number = Bank::find($account_default->bank_id)->first()->branch_number;
-            $account_number = $account_default->account_number;
-        }
-        if($employee->accounts->first() == null){
-            $bank = '';
-            $branch_number = '';
-            $account_number = '';
-        }
+        // الراتب الأولي ***********************************************
         if($employee->workData->type_appointment == 'مثبت'){
-            // مثبتين
-            // الحسابات
-            $percentage_allowance = ($employee->workData->percentage_allowance != null) ? $employee->workData->percentage_allowance : 100; //نسبة علاوة من طبيعة العمل
             $initial_salary = SalaryScale::where('id',$employee->workData->allowance)->first()->{$employee->workData->grade}; // الراتب الأولي
+            // فحص اذا من الصحة
             if($employee->workData->contract_type == 'صحة' && $employee->workData->type_appointment == 'مثبت'){
                 if($employee->scientific_qualification == 'بكالوريوس'){
                     $initial_salary = Constant::where('key', 'health_bachelor')->first() ? Constant::where('key', 'health_bachelor')->first()->value : 900;
@@ -138,7 +168,9 @@ class AddSalaryEmployee{
                     $initial_salary = Constant::where('key', 'health_secondary')->first() ? Constant::where('key', 'health_secondary')->first()->value : 700;
                 }
             }
-            $grade_allowance_ratio = ($employee->workData->grade_allowance_ratio / 100); // نسبة علاوة درجة
+
+            // نسبة علاوة درجة
+            $grade_allowance_ratio = ($employee->workData->grade_allowance_ratio / 100);
             if($grade_allowance_ratio != 0){
                 $grade_Allowance = number_format($initial_salary * $grade_allowance_ratio,0); // علاوة درجة
             }else{
@@ -151,6 +183,7 @@ class AddSalaryEmployee{
                 $grade_Allowance = $employee->workData->allowance * 20;
             }
 
+            // اذا هنالك تخصيص
             if($employee->customizations->isNotEmpty() != null){
                 if($employee->customizations->first()->grade_Allowance != ''){
                     $grade_Allowance = $employee->customizations->first()->grade_Allowance;
@@ -158,7 +191,9 @@ class AddSalaryEmployee{
             }
 
             $secondary_salary = $initial_salary + $grade_Allowance; // الراتب الثانوي
-            // الإضافات الثابتة
+
+
+            // علاوة الأولاد
             if($employee->workData->type_appointment == 'مثبت' && $employee->matrimonial_status == "متزوج"){
                 $allowance_boys = (($employee->number_children * 20) + 60);
             }elseif($employee->workData->type_appointment == 'مثبت' && ($employee->matrimonial_status == "متزوج - موظفة حكومة" || $employee->matrimonial_status == "ارملة")){
@@ -166,6 +201,7 @@ class AddSalaryEmployee{
             }else{
                 $allowance_boys = 0;
             }
+            
             if($employee->workData->section == 'الصحة'){
                 $allowance_boys = $allowance_boys / 2;
             }
@@ -175,33 +211,33 @@ class AddSalaryEmployee{
                 }
             }
 
+            // نسبة علاوة من طبيعة العمل
+            $percentage_allowance = ($employee->workData->percentage_allowance != null) ? $employee->workData->percentage_allowance : 0; //نسبة علاوة من طبيعة العمل
             $nature_work_increase = floatval(($percentage_allowance*0.01) * $secondary_salary); // علاوة طبيعة العمل
         }else{
             if($employee->workData->type_appointment == 'نسبة'){
                 $initial_salary = SpecificSalary::where('employee_id',$employee->id)->where('month',$month)->first();
-                $secondary_salary = $initial_salary;
             }else{
                 $initial_salary = SpecificSalary::where('employee_id',$employee->id)->where('month','0000-00')->first();
-                $secondary_salary = $initial_salary;
             }
-            if($secondary_salary == null || $secondary_salary->salary == 0){
+            if($initial_salary == null || $initial_salary->salary == 0){
                 return;
             }else{
                 $percentage_allowance = 0;
                 $grade_Allowance = 0;
                 $allowance_boys = 0;
                 $nature_work_increase =  0; // علاوة طبيعة العمل
-                $initial_salary = $secondary_salary->salary;
+                $initial_salary = $initial_salary->salary;
                 $secondary_salary = $initial_salary;
             }
         }
+        // ************************************************************
 
-        // المدخلات الثابتة
+        // المدخلات الثابتة ********************************************
         $fixedEntries = $employee->fixedEntries->where('month',$month)->first();
         $fixedEntriesStatic = $employee->fixedEntries->where('month','0000-00')->first();
 
-
-
+        // الإضافات
         $administrative_allowance = AddSalaryEmployee::fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'administrative_allowance');
         $scientific_qualification_allowance = AddSalaryEmployee::fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'scientific_qualification_allowance');
         $transport = AddSalaryEmployee::fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'transport');
@@ -214,9 +250,8 @@ class AddSalaryEmployee{
         $termination_service_rate = Constant::where('key','termination_service')->first('value') ? (Constant::where('key','termination_service')->first('value')->value / 100) : 0.1;
 
         // نهاية الخدمة
-
         $termination_service = $dual_function == null ?  number_format(($secondary_salary+$nature_work_increase+$administrative_allowance)*$termination_service_rate,2) : 0;
-        if($employee->workData->type_appointment == 'نسبة' || $dual_function == "موظف"){
+        if($employee->workData->type_appointment == 'نسبة' || $dual_function == "موظف" || $employee->workData->state_effectiveness == "شهيد"){
             $termination_service = 0;
         }
         if($employee->customizations->isNotEmpty() != null){
@@ -224,10 +259,6 @@ class AddSalaryEmployee{
                 $termination_service = number_format(($secondary_salary+$nature_work_increase+$administrative_allowance)*($employee->customizations->first()->termination_service ?? $termination_service_rate),2) ?? 0;
             }
         }
-        if($employee->workData->state_effectiveness == "شهيد"){
-            $termination_service = 0;
-        }
-
 
         $total_additions = ($allowance_boys + $nature_work_increase + $administrative_allowance + $scientific_qualification_allowance + $transport + $extra_allowance + $salary_allowance + $ex_addition + $mobile_allowance +$termination_service);
 
@@ -243,20 +274,24 @@ class AddSalaryEmployee{
         $savings_rate = AddSalaryEmployee::fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'savings_rate');
 
         if($savings_rate == 1){
-
             $savings_rate_percentage = Constant::where('key','termination_employee')->first()->value / 100;
             $savings_rate = ($secondary_salary + $nature_work_increase + $administrative_allowance) * $savings_rate_percentage;
         }else{
             $savings_rate = 0;
         }
+        // ************************************************************
 
-        // القروض
+
+        // القروض ************************************************
         $loans = $employee->loans->where('month',$month)->first();
         $loansStatic = $employee->loans->where('month','0000-00')->first();
-        $association_loan = AddSalaryEmployee::loanVal($loans,$loansStatic,'association_loan');
-        $savings_loan = AddSalaryEmployee::loanVal($loans,$loansStatic,'savings_loan');
-        $shekel_loan = AddSalaryEmployee::loanVal($loans,$loansStatic,'shekel_loan');
+        $association_loan = AddSalaryEmployee::loanVal($loans,$loansStatic,'association_loan',$month);
+        $savings_loan = AddSalaryEmployee::loanVal($loans,$loansStatic,'savings_loan',$month);
+        $shekel_loan = AddSalaryEmployee::loanVal($loans,$loansStatic,'shekel_loan',$month);
+        // ************************************************
 
+
+        // الضريبة ************************************************
         // إضافات للمبلغ الضريبية العملة شيكل
         $amount_tax = $working_status == "مداوم" || $working_status == "نعم"  ? ($secondary_salary + $nature_work_increase - $termination_service - $health_insurance - $savings_rate - $voluntary_contributions) / $USD : 0; // المبلغ الضريبي
 
@@ -281,33 +316,44 @@ class AddSalaryEmployee{
         $z_Income = ($z_Income / 12) * $USD;
 
         // تم إيقاف الضريبة لفترة الحرب
-        $z_Income = 0;
-
+        $z_Income = 0; 
+        // ************************************************************
         $total_discounts = ($termination_service + $health_insurance + $f_Oredo + $association_loan + $tuition_fees + $voluntary_contributions + $savings_loan + $shekel_loan + $paradise_discount + $other_discounts + $proportion_voluntary + $savings_rate + $z_Income);
 
         // إجمالي الراتب
-
         $gross_salary = $secondary_salary +$allowance_boys + $nature_work_increase + $administrative_allowance+ $scientific_qualification_allowance+ $transport + $extra_allowance+ $salary_allowance + $ex_addition + $mobile_allowance+ $termination_service;
-
 
         // مستحقات متأخرة
         $late_receivables = (($gross_salary - $total_discounts) >= $advance_payment) ? ($gross_salary - $total_discounts) - $advance_payment : 0; // مستحقات متأخرة
-
         if($employee->workData->type_appointment == 'نسبة'){
             $late_receivables = 0;
         }
 
+        // قرض الإدخار للعرض في الراتب
+        $savings_loan = $savings_loan / $USD;
 
+        // الراتب الصافي
         $gross_salary_final = ($secondary_salary + $total_additions) - $total_discounts;
         $net_salary = $gross_salary_final - $late_receivables;
-
         $amount_letters = Numbers::TafqeetMoney($net_salary,'ILS'); // المبلغ بالنص
 
-        // قرض الإدخار
-        $savings_loan = $savings_loan = AddSalaryEmployee::loanVal($loans,$loansStatic,'savings_loan') / $USD;
-
-        // إجمالي الراتب الاخير الخاص ببرنامج الإكسيل فقط للعرض
-
+        //  التخزين للبنك ********************************************
+        if($employee->accounts->first() != null){
+            foreach ($employee->accounts as $bank) {
+                $account_default = $bank->pivot->where('employee_id',$employee->id)->where('default',1)->first();
+                if($account_default == null){
+                    $account_default = $bank->pivot->where('employee_id',$employee->id)->first();
+                }
+            }
+            $bank = Bank::find($account_default->bank_id)->first()->name;
+            $branch_number = Bank::find($account_default->bank_id)->first()->branch_number;
+            $account_number = $account_default->account_number;
+        }else{
+            $bank = '';
+            $branch_number = '';
+            $account_number = '';
+        }
+        // ************************************************************
 
 
         // الراتب الشهري للموظفين الغير مداومين
@@ -374,44 +420,47 @@ class AddSalaryEmployee{
             }
         }
 
+
         DB::beginTransaction();
         try{
-            $salaryOld = Salary::where('employee_id',$employee->id)->where('month',$month)->first();
+            // تحميل القروض والإجماليات
+            AddSalaryEmployee::setloanTotal($savings_loan,$association_loan,$shekel_loan,$employee->id,$month);
+
+            // تحميل الراتب
             $salary = Salary::updateOrCreate([
-                'employee_id' => $employee->id,
-                'month' => $month,
-            ],[
-                'percentage_allowance' => $percentage_allowance,
-                'initial_salary' => $initial_salary,
-                'grade_Allowance' => $grade_Allowance,
-                'secondary_salary' => $secondary_salary,
-                'allowance_boys' => $allowance_boys,
-                'nature_work_increase' => $nature_work_increase,
-                'termination_service' =>$termination_service,
-                'z_Income' => $z_Income,
-                'gross_salary' => $gross_salary,
-                'late_receivables' => $late_receivables,
-                'total_discounts' => $total_discounts + $late_receivables,
-                'net_salary' => $net_salary,
-                'amount_letters' => $amount_letters,
-                'bank' => $bank,
-                'branch_number' => $branch_number,
-                'account_number' => $account_number,
-                'resident_exemption' => $resident_exemption,
-                'annual_taxable_amount' => $annual_taxable_amount, // مبلغ الضريبة الخاضع السنوي بالدولار
-                'tax' => $tax,
-                'exemptions' => $exemptions,
-                'amount_tax' => $amount_tax,
-                // حقول ثابتة للتحقق
-                'savings_loan' => $savings_loan,
-                'shekel_loan' => $shekel_loan,
-                'association_loan' => $association_loan,
-                'savings_rate' => $savings_rate,
+                    'employee_id' => $employee->id,
+                    'month' => $month,
+                ],[
+                    'percentage_allowance' => $percentage_allowance,
+                    'initial_salary' => $initial_salary,
+                    'grade_Allowance' => $grade_Allowance,
+                    'secondary_salary' => $secondary_salary,
+                    'allowance_boys' => $allowance_boys,
+                    'nature_work_increase' => $nature_work_increase,
+                    'termination_service' =>$termination_service,
+                    'z_Income' => $z_Income,
+                    'gross_salary' => $gross_salary,
+                    'late_receivables' => $late_receivables,
+                    'total_discounts' => $total_discounts + $late_receivables,
+                    'net_salary' => $net_salary,
+                    'amount_letters' => $amount_letters,
+                    'bank' => $bank,
+                    'branch_number' => $branch_number,
+                    'account_number' => $account_number,
+                    'resident_exemption' => $resident_exemption,
+                    'annual_taxable_amount' => $annual_taxable_amount, // مبلغ الضريبة الخاضع السنوي بالدولار
+                    'tax' => $tax,
+                    'exemptions' => $exemptions,
+                    'amount_tax' => $amount_tax,
+                    // حقول ثابتة للتحقق
+                    'savings_loan' => $savings_loan,
+                    'shekel_loan' => $shekel_loan,
+                    'association_loan' => $association_loan,
+                    'savings_rate' => $savings_rate,
             ]);
             DB::commit();
         }catch(\Exception $e){
             DB::rollBack();
-            throw $e;
             return redirect()->back()->with('danger', 'حذث هنالك خطأ بالإدخال يرجى مراجعة المهندس');
         }
     }

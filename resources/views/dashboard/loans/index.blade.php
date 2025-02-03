@@ -192,6 +192,7 @@
                                         <th>أكتوبر</th>
                                         <th>نوفمبر</th>
                                         <th>ديسمبر</th>
+                                        <th>الإجمالي للسنة</th>
                                         <th>الإجمالي</th>
                                         <th></th>
                                     </tr>
@@ -216,6 +217,7 @@
                                         <td id="total_15"></td>
                                         <td id="total_16"></td>
                                         <td id="total_17"></td>
+                                        <td id="total_18"></td>
                                         <td></td>
                                     </tr>
                                 </tfoot>
@@ -420,6 +422,9 @@
                         { data: 'month12', name: 'month12', orderable: false, render: function(data, type, row) {
                             return  formatNumber(data,2);
                         }},
+                        { data: 'total_year', name: 'total_year', orderable: false, render: function(data, type, row) {
+                            return  formatNumber(data,2);
+                        }},
                         { data: 'total', name: 'total', orderable: false, render: function(data, type, row) {
                             return  formatNumber(data,2);
                         }},
@@ -463,7 +468,7 @@
                         // 1. حساب عدد الأسطر في الصفحة الحالية
                         let rowCount = display.length;
 
-                        for (let i = 4; i < 18; i++) {
+                        for (let i = 4; i < 19; i++) {
                             var total = api
                                 .column(i, { page: 'current' }) // العمود الرابع
                                 .data()
@@ -631,6 +636,11 @@
                     totals_last : [],
                     loans : [],
                 };
+                let loanFinal = {
+                    total_savings_loan : 0,
+                    total_association_loan : 0,
+                    total_shekel_loan : 0,
+                }
                 let name_loan = {
                     'savings_loan' : 'قرض الإدخار',
                     'association_loan' : 'قرض الجمعية',
@@ -654,41 +664,6 @@
                             loan.totals_old = response.totals;
                             loan.totals_last = response.totals_last;
                             loan.loans = response.loans;
-                            // $('input[field="association_loan"]:not([disabled])').each(function() {
-                            //     if(lastMonthAccreditations == 12){
-                            //         if ($(this).attr('month') == nextLastMonth) {
-                            //             //
-                            //         }else{
-                            //             loan.totals.total_association_loan -= parseFloat($(this).val()) || 0;
-                            //         }
-                            //     }else{
-                            //         loan.totals.total_association_loan -= parseFloat($(this).val()) || 0;
-                            //     }
-                            // });
-                            // $('input[field="savings_loan"]:not([disabled])').each(function() {
-                            //     if(lastMonthAccreditations == 12){
-                            //         if ($(this).attr('month') == nextLastMonth) {
-                            //             //
-                            //         }else{
-                            //             loan.totals.total_savings_loan -= parseFloat($(this).val()) || 0;
-                            //         }
-                            //     }else{
-                            //         loan.totals.total_savings_loan -= parseFloat($(this).val()) || 0;
-                            //     }
-                            //     // loan.totals.total_savings_loan -= parseFloat($(this).val()) || 0;
-                            // });
-                            // $('input[field="shekel_loan"]:not([disabled])').each(function() {
-                            //     if(lastMonthAccreditations == 12){
-                            //         if ($(this).attr('month') == nextLastMonth) {
-                            //             //
-                            //         }else{
-                            //             loan.totals.total_shekel_loan -= parseFloat($(this).val()) || 0;
-                            //         }
-                            //     }else{
-                            //         loan.totals.total_shekel_loan -= parseFloat($(this).val()) || 0;
-                            //     }
-                            //     // loan.totals.total_shekel_loan -= parseFloat($(this).val()) || 0;
-                            // });
                             $('#employee_name').text(loan.name);
                             $('#association_loan_total').val(parseFloat(loan.totals.total_association_loan).toFixed(2));
                             $('#savings_loan_total').val(parseFloat(loan.totals.total_savings_loan).toFixed(2));
@@ -700,6 +675,7 @@
                         method: 'GET',
                         success: function (response) {
                             let data = response;
+                            console.log(data);
                             $('#loans_tbody').empty();
                             $.each(name_loan, function(key, value) {
                                 $('#loans_tbody').append(`
@@ -756,9 +732,9 @@
                 }
                 $(document).on('click', '#update', function () {
                     let formData = $('#editForm').serialize(); // جمع بيانات النموذج في سلسلة بيانات
-                    let association_loan_total = parseFloat($('#association_loan_total').val()) || 0;
-                    let savings_loan_total = parseFloat($('#savings_loan_total').val()) || 0;
-                    let shekel_loan_total = parseFloat($('#shekel_loan_total').val()) || 0;
+                    let association_loan_total = parseFloat(loanFinal.total_association_loan) || 0;
+                    let savings_loan_total = parseFloat(loanFinal.total_savings_loan) || 0;
+                    let shekel_loan_total = parseFloat(loanFinal.total_shekel_loan) || 0;
                     if(association_loan_total < 0 || savings_loan_total < 0 || shekel_loan_total < 0){
                         alert('لا يمكن أن يكون إجمالي القروض أقل من الصفر يرجى التدقيق لخصم القروض');
                         return;
@@ -808,6 +784,9 @@
                         }
                     }
                 });
+                $('#association_loan_total_span').text('');
+                $('#savings_loan_total_span').text('');
+                $('#shekel_loan_total_span').text('');
                 $(document).on('input', 'input[field="association_loan"], #association_loan-0000', function () {
                     let total = 0 ;
                     $('input[field="association_loan"]:not([disabled])').each(function() {
@@ -827,7 +806,8 @@
                         }
                     });
                     let totalFinal = parseFloat(loan.totals_old.total_association_loan) + total;
-                    $('#association_loan_total').val(totalFinal.toFixed(2));
+                    loanFinal.total_association_loan = totalFinal;
+                    $('#association_loan_total_span').text(totalFinal.toFixed(2));
                 });
                 $(document).on('input', 'input[field="savings_loan"], #savings_loan-0000', function () {
                     let total = 0 ;
@@ -849,7 +829,8 @@
                         
                     });
                     let totalFinal = (parseFloat(loan.totals_old.total_savings_loan) + total);
-                    $('#savings_loan_total').val(totalFinal.toFixed(2));
+                    loanFinal.total_savings_loan = totalFinal;
+                    $('#savings_loan_total_span').text(totalFinal.toFixed(2));
                 });
                 $(document).on('input', 'input[field="shekel_loan"], #shekel_loan-0000', function () {
                     let total = 0;
@@ -871,6 +852,8 @@
                     });
                     let totalFinal = parseFloat(loan.totals_old.total_shekel_loan) + total;
                     $('#shekel_loan_total').val(totalFinal.toFixed(2));
+                    loanFinal.total_shekel_loan = totalFinal;
+                    $('#shekel_loan_total_span').text(totalFinal.toFixed(2));
                 });
             });
         </script>

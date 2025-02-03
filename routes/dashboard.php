@@ -69,6 +69,7 @@ Route::group([
         // Loans ************************
     Route::post('loans/{loan}/print',[LoanController::class,'print'])->name('loans.print');
     Route::post('loans/getData',[LoanController::class,'getData'])->name('loans.getData');
+    Route::get('loans/resetLoans',[LoanController::class,'resetLoans'])->name('loans.resetLoans');
 
     // Fixed Entries ************************
     Route::post('fixed_entries/getData',[FixedEntriesController::class,'getData'])->name('fixed_entries.getData');
