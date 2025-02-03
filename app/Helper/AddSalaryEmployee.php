@@ -23,18 +23,20 @@ class AddSalaryEmployee{
     public static function fixedEntriesVal($fixedEntries,$fixedEntriesStatic,$filed){
         $USD = Currency::where('code','USD')->first('value')->value ?? 3.5;
         $val = 0;
-
-        // $val = ($fixedEntriesStatic != null) ? ($fixedEntriesStatic[$filed] != -1 ? $fixedEntriesStatic[$filed]  : (($fixedEntries != null) ? $fixedEntries[$filed]  : 0)): (($fixedEntries != null) ? $fixedEntries[$filed]  : 0);
-
-        if($fixedEntriesStatic != null && $fixedEntriesStatic[$filed] != -1 ){
+        if($fixedEntries[$filed] == 0){
             $val = $fixedEntriesStatic[$filed];
         }else{
-            if($fixedEntries != null){
-                $val = $fixedEntries[$filed];
-            }else{
-                $val = 0;
-            }
+            $val = $fixedEntries[$filed];
         }
+        // if($fixedEntriesStatic != null && $fixedEntriesStatic[$filed] != -1 ){
+        //     $val = $fixedEntriesStatic[$filed];
+        // }else{
+        //     if($fixedEntries != null){
+        //         $val = $fixedEntries[$filed];
+        //     }else{
+        //         $val = 0;
+        //     }
+        // }
         return $val;
     }
     public static function loanVal($loans,$loansStatic,$filed){
@@ -62,12 +64,18 @@ class AddSalaryEmployee{
         if($month == null){
             $month = Carbon::now()->format('Y-m');
         }
-        $state_effectiveness = Constant::where('key','state_effectiveness')->get()? Constant::where('key','state_effectiveness')->get()->pluck('value')->toArray()  : [];
-
+        $state_effectiveness = [
+            'فعال',
+            'شهيد'
+        ];
         $USD = Currency::where('code','USD')->first('value')->value ?? 3.5;
 
         // موظف غير فعال ام لا
         if(!in_array($employee->workData->state_effectiveness,$state_effectiveness)){
+            $salary = Salary::where('employee_id',$employee->id)->where('month',$month)->first();
+            if($salary != null){
+                $salary->delete();
+            }
             return;
         }
         // مزدوج الوظيفة
@@ -98,18 +106,18 @@ class AddSalaryEmployee{
 
 
         //  البنك المتعامل معه
-        if($employee->banks->first() != null){
-            foreach ($employee->banks as $bank) {
-                $account_default = $bank->accounts->where('employee_id',$employee->id)->where('default',1)->first();
+        if($employee->accounts->first() != null){
+            foreach ($employee->accounts as $bank) {
+                $account_default = $bank->pivot->where('employee_id',$employee->id)->where('default',1)->first();
                 if($account_default == null){
-                    $account_default = $bank->accounts->where('employee_id',$employee->id)->first();
+                    $account_default = $bank->pivot->where('employee_id',$employee->id)->first();
                 }
             }
             $bank = Bank::find($account_default->bank_id)->first()->name;
             $branch_number = Bank::find($account_default->bank_id)->first()->branch_number;
             $account_number = $account_default->account_number;
         }
-        if($employee->banks->first() == null){
+        if($employee->accounts->first() == null){
             $bank = '';
             $branch_number = '';
             $account_number = '';
@@ -201,7 +209,6 @@ class AddSalaryEmployee{
         $salary_allowance = AddSalaryEmployee::fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'salary_allowance');
         $ex_addition = AddSalaryEmployee::fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'ex_addition');
         $mobile_allowance = AddSalaryEmployee::fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'mobile_allowance');
-
 
         // نسبة نهاية الخدمة
         $termination_service_rate = Constant::where('key','termination_service')->first('value') ? (Constant::where('key','termination_service')->first('value')->value / 100) : 0.1;

@@ -40,6 +40,25 @@ class SalaryController extends Controller
             '12' => 'ديسمبر'
         ];
     }
+    public function fixedEntriesVal($fixedEntries,$fixedEntriesStatic,$filed){
+        $val = 0;
+        // $employee->health_insurance = $fixedEntriesStatic->health_insurance != '-01' ? $fixedEntriesStatic->health_insurance : $fixedEntries->health_insurance;
+        if($fixedEntries[$filed] == 0){
+            $val = $fixedEntriesStatic[$filed] != '-01' ? $fixedEntriesStatic[$filed] : 0;
+        }else{
+            $val = $fixedEntries[$filed];
+        }
+        // if($fixedEntriesStatic != null && $fixedEntriesStatic[$filed] != -1 ){
+        //     $val = $fixedEntriesStatic[$filed];
+        // }else{
+        //     if($fixedEntries != null){
+        //         $val = $fixedEntries[$filed];
+        //     }else{
+        //         $val = 0;
+        //     }
+        // }
+        return $val;
+    }
     /**
      * Display a listing of the resource.
      */
@@ -51,13 +70,13 @@ class SalaryController extends Controller
         $employee_ids = Salary::where('month', $month)->get('employee_id');
         $USD = Currency::where('code', 'USD')->first() ? Currency::where('code', 'USD')->first()->value : 0;
         $employees = Employee::with(['workData','loans','fixedEntries','salaries'])->whereIn('id',$employee_ids)->get()->map(function ($employee) use ($month, $USD) {
-            $fixedEntries = $employee->fixedEntries->where('month', $month)->first();
             $fixedEntriesStatic = $employee->fixedEntries->where('month', '0000-00')->first();
+            if($fixedEntriesStatic == null){
+                $fixedEntriesStatic = new FixedEntries();
+            }
+            $fixedEntries = $employee->fixedEntries->where('month', $month)->first();
             if($fixedEntries == null){
                 $fixedEntries = new FixedEntries();
-            }
-            if($fixedEntriesStatic == null){
-                $fixedEntriesStatic = $fixedEntries;
             }
             $salaries = $employee->salaries->where('month', $month)->first();
             $employee->name = isset($employee->name)  ? preg_replace('/"(.*?)"/', '($1)', $employee->name)  : '';                
@@ -70,16 +89,16 @@ class SalaryController extends Controller
             $employee->secondary_salary = $salaries->secondary_salary ?? 0;
             $employee->allowance_boys = $salaries->allowance_boys ?? 0;
             $employee->nature_work_increase = $salaries->nature_work_increase ?? 0;
-            $employee->administrative_allowance = $fixedEntriesStatic->administrative_allowance != '-01' ? $fixedEntriesStatic->administrative_allowance : $fixedEntries->administrative_allowance;
-            $employee->scientific_qualification_allowance = $fixedEntriesStatic->scientific_qualification_allowance != '-01' ? $fixedEntriesStatic->scientific_qualification_allowance : $fixedEntries->scientific_qualification_allowance;
-            $employee->transport = $fixedEntriesStatic->transport != '-01' ? $fixedEntriesStatic->transport : $fixedEntries->transport;
-            $employee->extra_allowance = $fixedEntriesStatic->extra_allowance != '-01' ? $fixedEntriesStatic->extra_allowance : $fixedEntries->extra_allowance;
-            $employee->salary_allowance = $fixedEntriesStatic->salary_allowance != '-01' ? $fixedEntriesStatic->salary_allowance : $fixedEntries->salary_allowance;
-            $employee->ex_addition = $fixedEntriesStatic->ex_addition != '-01' ? $fixedEntriesStatic->ex_addition : $fixedEntries->ex_addition;
-            $employee->mobile_allowance = $fixedEntriesStatic->mobile_allowance != '-01' ? $fixedEntriesStatic->mobile_allowance : $fixedEntries->mobile_allowance;
+            $employee->administrative_allowance = $this->fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'administrative_allowance');
+            $employee->scientific_qualification_allowance = $this->fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'scientific_qualification_allowance');
+            $employee->transport = $this->fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'transport');
+            $employee->extra_allowance = $this->fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'extra_allowance');
+            $employee->salary_allowance = $this->fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'salary_allowance');
+            $employee->ex_addition = $this->fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'ex_addition');
+            $employee->mobile_allowance = $this->fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'mobile_allowance');
             $employee->termination_service = $salaries->termination_service ?? 0;
             $employee->gross_salary = $salaries->gross_salary ?? 0;
-            $employee->health_insurance = $fixedEntriesStatic->health_insurance != '-01' ? $fixedEntriesStatic->health_insurance : $fixedEntries->health_insurance;
+            $employee->health_insurance = $this->fixedEntriesVal($fixedEntries,$fixedEntriesStatic,'health_insurance');
             $employee->z_Income = $salaries->z_Income ?? 0;
             $employee->savings_rate = $salaries->savings_rate ?? 0;
             $employee->association_loan = $salaries->association_loan ?? 0;
@@ -107,6 +126,7 @@ class SalaryController extends Controller
         $accreditations = Accreditation::get();
         $lastAccreditations = Accreditation::latest()->first();
         $monthDownload = ($lastAccreditations  != null) ? Carbon::parse($lastAccreditations->month)->addMonth()->format('Y-m') : '2024-07' ;
+        $employee_ids = Salary::where('month', $monthDownload)->get('employee_id');
         $btn_download_salary = $employee_ids->isNotEmpty() ? "active" : null;
         if($employees->isEmpty()) {
             $btn_download_salary = "active";
@@ -200,8 +220,8 @@ class SalaryController extends Controller
             DB::rollBack();
             throw $exception;
         }
-        return redirect()->route('salaries.index')->with('success', 'تم اضافة الراتب لجميع الموظفين للشهر الحالي')
-                ->with('danger', $logRecords);
+        return redirect()->route('dashboard.salaries.index')->with('success', 'تم اضافة الراتب لجميع الموظفين للشهر الحالي')
+                ->with('error', $logRecords);
     }
     // Create All Salaries
     public function deleteAllSalaries(Request $request){
@@ -236,7 +256,7 @@ class SalaryController extends Controller
             DB::rollBack();
             throw $exception;
         }
-        return redirect()->route('home')->with('danger', 'تم حذف الراتب لجميع الموظفين للشهر الحالي');
+        return redirect()->route('dashboard.home')->with('danger', 'تم حذف الراتب لجميع الموظفين للشهر الحالي');
     }
 
     public function viewPDF(Request $request,$id){

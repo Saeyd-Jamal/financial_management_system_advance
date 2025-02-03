@@ -138,7 +138,8 @@
                             id: id
                         },
                         success: function(response) {
-                            console.log(response);
+                            $('#data_last_log_view').empty();
+                            $('#data_updated_log_view').empty();
                             let color = 'primary';
                             let type = '';
                             if (response.event_type == 'Created') {
@@ -169,29 +170,80 @@
 
                             // Add the data event in the view
                             if(response.event_type == 'Updated'){
+                                $('#created_log').addClass('d-none');
                                 $('#updated_log').removeClass('d-none');
                                 $('#data_last_log_view').empty();
-                                Object.entries(response.old_data).forEach(([key, value]) => {
+                                if(response.model_name == "Employee"){
+                                    Object.entries(response.old_data[0]).forEach(([key, value]) => {
+                                        $('#data_last_log_view').append(`
+                                            <li class="mb-2">
+                                                <span class="h6">${key}:</span>
+                                                <span>${value}</span>
+                                            </li>
+                                        `);
+                                    });
                                     $('#data_last_log_view').append(`
                                         <li class="mb-2">
-                                            <span class="h6">${key}:</span>
-                                            <span>${value}</span>
+                                            <h3>بيانات العمل</h3>
                                         </li>
                                     `);
-                                });
+                                    Object.entries(response.old_data[1]).forEach(([key, value]) => {
+                                        $('#data_last_log_view').append(`
+                                            <li class="mb-2">
+                                                <span class="h6">${key}:</span>
+                                                <span>${value}</span>
+                                            </li>
+                                        `);
+                                    });
 
-                                $('#data_updated_log_view').empty();
-                                // معالجة new_data
-                                Object.entries(response.new_data).forEach(([key, value]) => {
+                                    $('#data_updated_log_view').empty();
+                                    // معالجة new_data
+                                    Object.entries(response.new_data[0]).forEach(([key, value]) => {
+                                        $('#data_updated_log_view').append(`
+                                            <li class="mb-2">
+                                                <span class="h6">${key}:</span>
+                                                <span>${value}</span>
+                                            </li>
+                                        `);
+                                    });
                                     $('#data_updated_log_view').append(`
                                         <li class="mb-2">
-                                            <span class="h6">${key}:</span>
-                                            <span>${value}</span>
+                                            <h3>بيانات العمل</h3>
                                         </li>
                                     `);
-                                });
+                                    Object.entries(response.new_data[1]).forEach(([key, value]) => {
+                                        $('#data_updated_log_view').append(`
+                                            <li class="mb-2">
+                                                <span class="h6">${key}:</span>
+                                                <span>${value}</span>
+                                            </li>
+                                        `);
+                                    });
+                                }else{
+                                    Object.entries(response.old_data).forEach(([key, value]) => {
+                                        $('#data_last_log_view').append(`
+                                            <li class="mb-2">
+                                                <span class="h6">${key}:</span>
+                                                <span>${value}</span>
+                                            </li>
+                                        `);
+                                    });
+
+                                    $('#data_updated_log_view').empty();
+                                    // معالجة new_data
+                                    Object.entries(response.new_data).forEach(([key, value]) => {
+                                        $('#data_updated_log_view').append(`
+                                            <li class="mb-2">
+                                                <span class="h6">${key}:</span>
+                                                <span>${value}</span>
+                                            </li>
+                                        `);
+                                    });
+                                }
+                                
                             }
                             if(response.event_type == 'Created'){
+                                $('#updated_log').addClass('d-none');
                                 $('#created_log').removeClass('d-none');
                                 $('#data_log_view').empty();
                                 Object.entries(response.new_data).forEach(([key, value]) => {

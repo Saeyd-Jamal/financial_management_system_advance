@@ -30,8 +30,14 @@ class EmployeeObserver
             'Updated',
             'Employee',
             "تم تعديل بيانات الموظف  : {$employee->name}.",
-            $employee->getOriginal(),
-            $employee->getChanges()
+            [
+                $employee->getOriginal(),
+                $employee->workData->getOriginal()
+            ],
+            [
+                $employee->getChanges(),
+                $employee->workData->getChanges()
+            ]
         );    
     }
 

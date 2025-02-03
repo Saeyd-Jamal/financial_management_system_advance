@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Helper\FormatSize;
 use App\Models\FixedEntries;
+use App\Models\Loan;
 use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -281,6 +282,7 @@ class EmployeeController extends Controller
             $accounts = new Account();
         }
 
+        $employee->loans = Loan::where('employee_id', $employee->id)->get();
 
         // Files
         $files = json_decode($employee->workData->files) ?? [];
